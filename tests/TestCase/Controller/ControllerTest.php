@@ -747,7 +747,6 @@ class ControllerTest extends TestCase
         $this->assertSame($Controller->request->params['paging']['Posts']['pageCount'], 2);
         $this->assertSame($Controller->request->params['paging']['Posts']['prevPage'], true);
         $this->assertSame($Controller->request->params['paging']['Posts']['nextPage'], false);
-
     }
 
     /**
