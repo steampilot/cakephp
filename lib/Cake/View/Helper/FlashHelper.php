@@ -61,6 +61,8 @@ class FlashHelper extends AppHelper {
  * ));
  * ```
  *
+ * If you have several messages stored in the Session, each message will be rendered in its own element.
+ *
  * @param string $key The [Message.]key you are rendering in the view.
  * @param array $options Additional options to use for the creation of this flash message.
  *    Supports the 'params', and 'element' keys that are used in the helper.
@@ -82,10 +84,14 @@ class FlashHelper extends AppHelper {
 			));
 		}
 
-		$flash = $options + $flash;
 		CakeSession::delete("Message.$key");
 		$flash['key'] = $key;
 
-		return $this->_View->element($flash['element'], $flash);
+		$out = '';
+		foreach ($flash as $message) {
+			$message = $options + $message;
+			$out .= $this->_View->element($message[''], $message);
+		}
+		return $out;
 	}
 }

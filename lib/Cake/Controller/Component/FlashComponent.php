@@ -38,6 +38,7 @@ class FlashComponent extends Component {
 		'key' => 'flash',
 		'element' => 'default',
 		'params' => array(),
+		'clear' => false
 	);
 
 /**
@@ -53,6 +54,7 @@ class FlashComponent extends Component {
 /**
  * Used to set a session variable that can be used to output messages in the view.
  *
+ * If you make consecutive calls to this method, the messages will stack (if they are set with the same flash key)
  * In your controller: $this->Flash->set('This has been saved');
  *
  * ### Options:
@@ -60,6 +62,7 @@ class FlashComponent extends Component {
  * - `key` The key to set under the session's Flash key
  * - `element` The element used to render the flash message. Default to 'default'.
  * - `params` An array of variables to make available when using an element
+ * - `clear` A bool stating if the current stack should be cleared to start a new one
  *
  * @param string $message Message to be flashed. If an instance
  *   of Exception the exception message will be used and code will be set
@@ -67,7 +70,6 @@ class FlashComponent extends Component {
  * @param array $options An array of options.
  * @return void
  */
-
 	public function set($message, $options = array()) {
 		$options += $this->_defaultConfig;
 
@@ -82,12 +84,18 @@ class FlashComponent extends Component {
 		}
 		$options['element'] = $plugin . 'Flash/' . $element;
 
-		CakeSession::write('Message.' . $options['key'], array(
+		$messages = array();
+		if ($options['clear'] === false) {
+			$messages = CakeSession::read('Flash.' . $options['key']);
+		}
+		$messages[] = array(
 			'message' => $message,
 			'key' => $options['key'],
 			'element' => $options['element'],
 			'params' => $options['params']
-		));
+		);
+
+		CakeSession::write('Flash.' . $options['key'], $messages);
 	}
 
 /**
@@ -97,21 +105,31 @@ class FlashComponent extends Component {
  * success.ctp element under `app/View/Element/Flash` for rendering the
  * flash message.
  *
+ * If you make consecutive calls to this method, the messages will stack (if they are
+ * set with the same flash key)
+ *
  * @param string $name Element name to use.
  * @param array $args Parameters to pass when calling `FlashComponent::set()`.
  * @return void
  * @throws InternalErrorException If missing the flash message.
  */
 	public function __call($name, $args) {
-		$options = array('element' => Inflector::underscore($name));
-
 		if (count($args) < 1) {
 			throw new InternalErrorException('Flash message missing.');
 		}
 
+		$element = Inflector::underscore($name);
+
+		$options = array('element' => $element);
+
 		if (!empty($args[1])) {
+			if (!empty($args[1]['plugin'])) {
+				$options = array('element' => $args[1]['plugin'] . '.' . $element);
+				unset($args[1]['plugin']);
+			}
 			$options += (array)$args[1];
 		}
+
 
 		$this->set($args[0], $options);
 	}
